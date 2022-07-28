@@ -1,22 +1,31 @@
 from ast import While
 import psycopg2
 from typing import Union
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from pydantic import BaseModel
 from random import randrange
 from psycopg2.extras import RealDictCursor
 from .config import settings
 import time
+from .database import SessionLocal
+from . import models
+from .database import engine
+from sqlalchemy.orm import Session
 
-
+# models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 class Post(BaseModel):
     title: str
     content: str
     published: bool = True
-
-
 
 
 while True:
@@ -34,6 +43,10 @@ while True:
 #     cur.execute(""" SELECT * FROM posts WHERE id = %s""", (id))
 #     post = cur.fetchone()
 #     print(post)
+
+@app.get("/sqlalchemy")
+def sql_route(db: Session = Depends(get_db)):
+    return{"status": "Success"}
 
 @app.get("/")
 def read_root():
