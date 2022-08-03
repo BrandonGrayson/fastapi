@@ -70,6 +70,17 @@ def sql_delete(id: int, db: Session = Depends(get_db)):
    db.commit()
    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+@app.put("/sqlupdate/{id}")
+def sql_update(updated_post: Post, id: int, db: Session = Depends(get_db)):
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
+    
+    if not post:
+     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
+
+    post_query.update(updated_post.dict(), synchronize_session=False)
+    db.commit()
+    return {"updated": post_query.first()}
 
 @app.post("/addsqluser")
 def add_user(post: Post, db: Session = Depends(get_db)):
