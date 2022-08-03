@@ -11,6 +11,7 @@ from .database import SessionLocal
 from . import models
 from .database import engine
 from sqlalchemy.orm import Session
+from sqlalchemy import delete
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -57,10 +58,23 @@ def sql_get_id(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
     return {"post": post}
 
+@app.delete("/sqldelete/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def sql_delete(id: int, db: Session = Depends(get_db)):
+  
+   post = db.query(models.Post).filter(models.Post.id == id)
+  
+   if post.first() == None:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
+   
+   post.delete(synchronize_session=False)
+   db.commit()
+   return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @app.post("/addsqluser")
 def add_user(post: Post, db: Session = Depends(get_db)):
    
-    new_post = models.Post(**post)
+    new_post = models.Post(**post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
