@@ -44,9 +44,15 @@ while True:
 #     post = cur.fetchone()
 #     print(post)
 
-@app.get("/sqlalchemy")
+@app.get("/sql")
 def sql_route(db: Session = Depends(get_db)):
-    return{"status": "Success"}
+    posts = db.query(models.Post).all()
+    return{"posts": posts}
+
+@app.get("/sql/{id}")
+def sql_get_id(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.Post).filter(models.Post.id == id).first()
+    return {"user": user}
 
 @app.get("/")
 def read_root():
