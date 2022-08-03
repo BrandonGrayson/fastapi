@@ -51,8 +51,20 @@ def sql_route(db: Session = Depends(get_db)):
 
 @app.get("/sql/{id}")
 def sql_get_id(id: int, db: Session = Depends(get_db)):
-    user = db.query(models.Post).filter(models.Post.id == id).first()
-    return {"user": user}
+    post = db.query(models.Post).filter(models.Post.id == id).first()
+
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
+    return {"post": post}
+
+@app.post("/addsqluser")
+def add_user(post: Post, db: Session = Depends(get_db)):
+   
+    new_post = models.Post(**post)
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
+    return {"db_post": new_post}
 
 @app.get("/")
 def read_root():
