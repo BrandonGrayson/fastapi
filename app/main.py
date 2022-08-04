@@ -1,10 +1,10 @@
-from ast import While
 import psycopg2
 from typing import List
 from fastapi import FastAPI, Response, status, HTTPException, Depends
-from random import randrange
 from psycopg2.extras import RealDictCursor
 from .config import settings
+from pydantic import BaseModel
+from passlib.context import CryptContext
 import time
 from .database import SessionLocal
 from . import models, schemas
@@ -12,8 +12,16 @@ from .database import engine
 from sqlalchemy.orm import Session
 from sqlalchemy import delete
 
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
 
 def get_db():
     db = SessionLocal()
@@ -136,6 +144,9 @@ def update_post(id: int, post: schemas.PostCreate):
 
 @app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+
+    hashed_password = get_password_hash(user.password)
+    user.password = hashed_password
    
     user = models.User(**user.dict())
     db.add(user)
