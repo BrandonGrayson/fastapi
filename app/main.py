@@ -1,6 +1,6 @@
 from ast import While
 import psycopg2
-from typing import Union
+from typing import List
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from random import randrange
 from psycopg2.extras import RealDictCursor
@@ -41,12 +41,12 @@ while True:
 #     post = cur.fetchone()
 #     print(post)
 
-@app.get("/sql")
+@app.get("/sql", response_model=List[schemas.Post])
 def sql_route(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
     return posts
 
-@app.get("/sql/{id}")
+@app.get("/sql/{id}", response_model=schemas.Post)
 def sql_get_id(id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
 
@@ -66,7 +66,7 @@ def sql_delete(id: int, db: Session = Depends(get_db)):
    db.commit()
    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@app.put("/sqlupdate/{id}")
+@app.put("/sqlupdate/{id}", response_model = schemas.Post)
 def sql_update(updated_post: schemas.PostCreate, id: int, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
@@ -87,6 +87,9 @@ def add_user(post: schemas.PostCreate, db: Session = Depends(get_db)):
     db.refresh(new_post)
     return new_post
 
+
+
+##### Psycopg2 Postgresql standard SQL Queries
 @app.get("/")
 def read_root():
     cur.execute(""" SELECT * FROM public.posts """)
@@ -94,7 +97,7 @@ def read_root():
     print(posts)
     return posts
 
-@app.post("/posts")
+@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model = schemas.Post)
 def create_post(post: schemas.PostCreate):
     cur.execute(""" INSERT into  public.posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title, post.content, post.published))
     new_post = cur.fetchone()
