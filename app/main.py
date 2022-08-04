@@ -44,7 +44,7 @@ while True:
 @app.get("/sql")
 def sql_route(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
-    return{"posts": posts}
+    return posts
 
 @app.get("/sql/{id}")
 def sql_get_id(id: int, db: Session = Depends(get_db)):
@@ -52,7 +52,7 @@ def sql_get_id(id: int, db: Session = Depends(get_db)):
 
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
-    return {"post": post}
+    return post
 
 @app.delete("/sqldelete/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def sql_delete(id: int, db: Session = Depends(get_db)):
@@ -67,7 +67,7 @@ def sql_delete(id: int, db: Session = Depends(get_db)):
    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/sqlupdate/{id}")
-def sql_update(updated_post: schemas.Post, id: int, db: Session = Depends(get_db)):
+def sql_update(updated_post: schemas.PostCreate, id: int, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
     
@@ -76,30 +76,30 @@ def sql_update(updated_post: schemas.Post, id: int, db: Session = Depends(get_db
 
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
-    return {"updated": post_query.first()}
+    return post_query.first()
 
-@app.post("/addsqluser")
-def add_user(post: schemas.Post, db: Session = Depends(get_db)):
+@app.post("/addsqluser", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
+def add_user(post: schemas.PostCreate, db: Session = Depends(get_db)):
    
     new_post = models.Post(**post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
-    return {"db_post": new_post}
+    return new_post
 
 @app.get("/")
 def read_root():
     cur.execute(""" SELECT * FROM public.posts """)
     posts = cur.fetchall()
     print(posts)
-    return {"data": posts}
+    return posts
 
 @app.post("/posts")
-def create_post(post: schemas.Post):
+def create_post(post: schemas.PostCreate):
     cur.execute(""" INSERT into  public.posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title, post.content, post.published))
     new_post = cur.fetchone()
     conn.commit()
-    return {"new post": new_post}
+    return new_post
 
 @app.get("/getpost/{id}")
 def get_post(id: int):
@@ -108,7 +108,7 @@ def get_post(id: int):
     # post = find_post(id)
     if not fetched_post:
          raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} does not exist")
-    return {"ind_post": fetched_post}
+    return fetched_post
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
@@ -121,7 +121,7 @@ def delete_post(id: int):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/posts/{id}")
-def update_post(id: int, post: schemas.Post):
+def update_post(id: int, post: schemas.PostCreate):
     cur.execute(""" UPDATE posts SET title = %s, content = %s, published = %s  WHERE id = %s RETURNING * """, (post.title, post.content, post.published, (str(id),)))
     updated_post = cur.fetchone()
     conn.commit()
@@ -129,5 +129,5 @@ def update_post(id: int, post: schemas.Post):
     if updated_post == None:
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"post with id: {id} was not found.")
     
-    return {"updated_post": updated_post}
+    return updated_post
 
