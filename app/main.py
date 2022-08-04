@@ -2,13 +2,12 @@ from ast import While
 import psycopg2
 from typing import Union
 from fastapi import FastAPI, Response, status, HTTPException, Depends
-from pydantic import BaseModel
 from random import randrange
 from psycopg2.extras import RealDictCursor
 from .config import settings
 import time
 from .database import SessionLocal
-from . import models
+from . import models, schemas
 from .database import engine
 from sqlalchemy.orm import Session
 from sqlalchemy import delete
@@ -23,10 +22,7 @@ def get_db():
     finally:
         db.close()
 
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True
+
 
 
 while True:
@@ -71,7 +67,7 @@ def sql_delete(id: int, db: Session = Depends(get_db)):
    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/sqlupdate/{id}")
-def sql_update(updated_post: Post, id: int, db: Session = Depends(get_db)):
+def sql_update(updated_post: schemas.Post, id: int, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
     
@@ -83,7 +79,7 @@ def sql_update(updated_post: Post, id: int, db: Session = Depends(get_db)):
     return {"updated": post_query.first()}
 
 @app.post("/addsqluser")
-def add_user(post: Post, db: Session = Depends(get_db)):
+def add_user(post: schemas.Post, db: Session = Depends(get_db)):
    
     new_post = models.Post(**post.dict())
     db.add(new_post)
@@ -99,7 +95,7 @@ def read_root():
     return {"data": posts}
 
 @app.post("/posts")
-def create_post(post: Post):
+def create_post(post: schemas.Post):
     cur.execute(""" INSERT into  public.posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title, post.content, post.published))
     new_post = cur.fetchone()
     conn.commit()
@@ -125,7 +121,7 @@ def delete_post(id: int):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/posts/{id}")
-def update_post(id: int, post: Post):
+def update_post(id: int, post: schemas.Post):
     cur.execute(""" UPDATE posts SET title = %s, content = %s, published = %s  WHERE id = %s RETURNING * """, (post.title, post.content, post.published, (str(id),)))
     updated_post = cur.fetchone()
     conn.commit()
