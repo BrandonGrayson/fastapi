@@ -3,13 +3,11 @@ from typing import List
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from psycopg2.extras import RealDictCursor
 from .config import settings
-from pydantic import BaseModel
 import time
 from .database import SessionLocal
 from . import models, schemas, utils
 from .database import engine
 from sqlalchemy.orm import Session
-from sqlalchemy import delete
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -20,9 +18,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-
-
 
 while True:
     try:
@@ -145,5 +140,13 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(user)
     return user
    
-    
+@app.get("/users/{id}", response_model=schemas.User)
+def get_users(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()  
+
+    if not user:
+        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"post with id: {id} was not found.") 
+
+    return user
+
 
