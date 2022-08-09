@@ -1,5 +1,4 @@
 import psycopg2
-
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from psycopg2.extras import RealDictCursor
 from .config import settings
@@ -7,13 +6,14 @@ import time
 from .database import SessionLocal
 from . import models
 from .database import engine
-from .routes import users, post
+from .routes import users, post, auth
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 app.include_router(users.router)
 app.include_router(post.router)
+app.include_router(auth.router)
 
 while True:
     try:
