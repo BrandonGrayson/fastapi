@@ -48,8 +48,10 @@ def sql_update(updated_post: schemas.PostCreate, id: int, db: Session = Depends(
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
 def add_user(post: schemas.PostCreate, db: Session = Depends(get_db)):
-   
-    new_post = models.Post(**post.dict())
+    print('post', post)
+    owner_id = input("What is the owner id for this post?")
+    int(owner_id)
+    new_post = models.Post(owner_id=owner_id, **post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
