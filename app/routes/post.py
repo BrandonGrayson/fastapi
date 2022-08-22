@@ -9,9 +9,11 @@ router = APIRouter(
     tags=["Posts"]
 )
 
-@router.get("/", response_model=List[schemas.Post])
-def sql_route(db: Session = Depends(get_db)):
-    posts = db.query(models.Post).all()
+# Last thing done was updated the limit for the get route
+
+@router.get("/", response_model=List[schemas.Post], )
+def sql_route(db: Session = Depends(get_db), limit: int = 10,):
+    posts = db.query(models.Post).limit(limit)
     return posts
 
 @router.get("/{id}", response_model=schemas.Post)
